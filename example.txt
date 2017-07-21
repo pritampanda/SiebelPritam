@@ -1,0 +1,101 @@
+@echo off
+ 
+set SOFTWARE=lscm
+set CHECKIN=%SOFTWARE% checkin
+set CHECKOUT=%SOFTWARE% accept -v
+set ADD=%SOFTWARE% checkin
+set DELIVER=%SOFTWARE% deliver --overwrite-uncommitted
+ 
+ 
+rem ==================================================================
+rem =============== User defined parameters ================================
+rem ==================================================================
+PATH=RTC PATH to SCM Commands
+set RTC_URL=https://svhvms006.himainc.com:9443/ccm/
+rem RTC_REPOS=do-not-use
+set SRC_USR=RTC userid-uid
+set SRC_PSWD=yourpassword
+set LOGFILE=D:\development\projects\rtcsiebel.log
+set WORKING_DIR=RTC Workspace
+rem LOGFILE SHOULD NOT HAVE SPACES IN ITS PATH
+rem ==================================================================
+rem ==================================================================
+
+
+
+ 
+set OPTIONS=--username %SRC_USR% --password %SRC_PSWD% -v
+set COMMENT=-F
+set FILE=
+ 
+echo %* >> %LOGFILE%
+echo =======================Srcctrl.bat========================== >> %LOGFILE%
+ 
+set ACTION=%1
+shift
+set DIR=%1
+shift
+set COMMENT=%COMMENT% %1
+set COMMENT_FILE=%1
+shift
+set FILE=%1
+ 
+SET DIR_NO_QUOTE=###%DIR%###
+SET DIR_NO_QUOTE=%DIR_NO_QUOTE:"###=%
+SET DIR_NO_QUOTE=%DIR_NO_QUOTE:###"=%
+SET DIR_NO_QUOTE=%DIR_NO_QUOTE:###=%
+ 
+if errorlevel 100 goto END
+ 
+if %ACTION%==checkout goto CHECK_OUT
+if %ACTION%==checkin goto CHECK_IN
+ 
+:CHECK_OUT
+echo ============Check out file %FILE% from Source Control System============ >> %LOGFILE%
+ 
+echo Change local directory to %DIR% >> %LOGFILE%
+chdir %DIR% >> %LOGFILE% 2>&1
+ 
+echo Start checking out %FILE% from Source Control System >> %LOGFILE%
+echo %CHECKOUT% %RTC_URL%/ %OPTIONS% "%WORKING_DIR%\%rtc_REPOS%" >> %LOGFILE%
+lscm accept -v >> %LOGFILE% 2>&1
+ 
+goto END
+ 
+:CHECK_IN
+echo ============Check in file %FILE% into Source Control System============ >> %LOGFILE%
+ 
+echo Change local directory to %WORKING_DIR%\%RTC_REPOS% >> %LOGFILE%
+chdir %WORKING_DIR% >> %LOGFILE% 2>&1
+ 
+if exist %FILE% goto FILE_EXIST >> %LOGFILE% 2>&1
+ 
+echo Copying %FILE% to local Working Copy Folder: %WORKING_DIR% >> %LOGFILE%
+copy "%DIR_NO_QUOTE%%FILE%" "%WORKING_DIR%\%FILE%"
+ >> %LOGFILE% 2>&1
+ 
+echo Add %FILE% in case it doesn't exist in Source Control System >> %LOGFILE%
+echo %ADD% %WORKING_DIR%\%rtc_REPOS%\%FILE% %OPTIONS% >> %LOGFILE%
+%ADD% %WORKING_DIR%\%FILE% >> %LOGFILE% 2>&1
+ 
+goto COMMIT
+ 
+:FILE_EXIST
+ 
+echo Copying %FILE% to local Working Copy Folder: %WORKING_DIR% >> %LOGFILE%
+echo copy "%DIR_NO_QUOTE%%FILE%" "%WORKING_DIR%\%FILE%" >> %LOGFILE%
+copy "%DIR_NO_QUOTE%%FILE%" "%WORKING_DIR%\%FILE%" >> %LOGFILE% 2>&1
+ 
+:COMMIT
+echo Check in %WORKING_DIR%\%FILE% into Source Control System >> %LOGFILE%
+echo %CHECKIN% %WORKING_DIR%\%FILE% >> %LOGFILE%
+echo ***** COMMENT_FILE ***** >> %LOGFILE%
+type %COMMENT_FILE% >> %LOGFILE% 2>&1
+echo . >> %LOGFILE%
+echo ************************ >> %LOGFILE%
+%CHECKIN% %WORKING_DIR%\%FILE% >> %LOGFILE% 2>&1
+ 
+goto END
+ 
+:END
+echo ===================End Of Srcctrl.bat====================== >> %LOGFILE%
